@@ -499,7 +499,7 @@ menu.my_root():list_select("Difficulty", {}, "Adjusts the grace period in millis
     {500, "Hard"},
 	{300, "Mental (Very hard, but possible)"},
 	{150, "Single line"},
-}, 1500, function(value, menu_name,)
+}, 1500, function(value, menu_name)
 	difficulty = value
     util.toast("Value changed to " .. lang.get_localised(menu_name) .. " (" .. value .. ")")
 end)
