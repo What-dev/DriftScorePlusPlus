@@ -1,9 +1,9 @@
 util.require_natives(1663599433)
 
-auto_updater.run_auto_update({
+local auto_update_config = {
     source_url="https://raw.githubusercontent.com/What-dev/DriftScorePlusPlus/master/DriftScore%2B%2B.lua",
     script_relpath=SCRIPT_RELPATH,
-})
+}
 
 util.ensure_package_is_installed('lua/auto-updater')
 local auto_updater = require('auto-updater')
