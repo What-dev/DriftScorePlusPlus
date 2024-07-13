@@ -19,6 +19,7 @@ local save_score_to_file = true
 local updates_pending = false
 local difficulty = 1500 --1500 is the original
 local endbanner = true
+local multiplier = 1
 
 local offset_x = 0
 local offset_y = 0
@@ -29,7 +30,9 @@ local show_other_players_scores = true
 local drift_mode_enabled = false
 local score_counter_enabled = true
 
-
+if crashdetection == true then
+	menu.trigger_commands("vehgodmode off")
+end
 
 local function load_scores(file_path)
     if not filesystem.exists(file_path) then
@@ -251,15 +254,16 @@ local function update_drift_score(player)
         local speed = ENTITY.GET_ENTITY_SPEED_VECTOR(vehicle, true).y
 
         if drift_angle > 15 and dot_product > 0 and speed > 4 then
-            drift_score = drift_score + 1
+            drift_score = drift_score + multiplier
             last_drift_time = util.current_time_millis()
         end
+
 
         if util.current_time_millis() - last_drift_time > difficulty then
             if drift_score > 0 then
 
                 local high_score = last_high_score or 0
-                if drift_score > high_score then
+                if drift_score > tonumber(high_score) then
                     last_high_score = drift_score
                     if save_score_to_file then
                         save_scores(player_scores_file, last_high_score)
@@ -285,6 +289,7 @@ local function update_drift_score(player)
     end
 end
 
+
 util.create_tick_handler(function()
     if not score_counter_enabled then return end
 
@@ -296,10 +301,10 @@ util.create_tick_handler(function()
         local speed = ENTITY.GET_ENTITY_SPEED_VECTOR(vehicle, true).y
 
         if drift_angle > 15 and dot_product > 0 and speed > 4 then
-            local_drift_score = local_drift_score + 1
+            local_drift_score = local_drift_score + multiplier
             local_last_drift_time = util.current_time_millis()
         end
-
+		
         if util.current_time_millis() - local_last_drift_time > difficulty then
             if local_drift_score > 0 then
                 local vehicle_name = get_vehicle_name(vehicle)
@@ -309,7 +314,7 @@ util.create_tick_handler(function()
                 end
                 local high_score = last_high_score or 0
                 if tonumber(local_drift_score) > tonumber(high_score) then
-                    last_high_score = local_drift_score
+                    last_high_score = math.round(local_drift_score)
                     if save_score_to_file then
                         save_scores(player_scores_file, last_high_score)
                     else
@@ -319,13 +324,19 @@ util.create_tick_handler(function()
                 local message = (tonumber(local_drift_score) > tonumber(high_score)) and ("New Record: " .. local_drift_score) or ("Drift Score: " .. local_drift_score .. " (High Score: " .. high_score .. ")")
                 if endbanner == true then
 					draw_large_message("Drift Ended", message .. " - Car: " .. vehicle_name, 300)
+					multiplier = 1
 				else
 					fullmessage = "Drift Ended: " .. message .. " - Car: " .. vehicle_name
 					util.toast(fullmessage)
+					multiplier = 1
 				end
                 local_drift_score = 0
             end
-        end
+        elseif util.current_time_millis() - local_last_drift_time > 1 then
+			if VEHICLE.IS_VEHICLE_IN_BURNOUT(vehicle) == false and speed > 7 then
+				multiplier = multiplier + 0.1
+			end
+		end
     else
         local_drift_score = 0
     end
@@ -351,12 +362,35 @@ util.create_tick_handler(function()
 end)
 
 util.create_tick_handler(function()
+	if multiplier > 0 and multiplier < 1.5 then
+		multiplier = 1
+	elseif multiplier >= 1.5 and multiplier < 2.5 then
+		multiplier = 2
+	elseif multiplier >= 2.5 and multiplier < 3.5 then
+		multiplier = 3
+	elseif multiplier >= 3.5 and multiplier < 4.5 then
+		multiplier = 4
+	elseif multiplier >= 4.5 and multiplier < 5.5 then
+		multiplier = 5
+	elseif multiplier >= 5.5 and multiplier < 10.5 then
+		multiplier = 10
+	elseif multiplier >= 10.5 and multiplier < 25.5 then
+		multiplier = 25
+	elseif multiplier >= 25.5 and multiplier < 50.5 then
+		multiplier = 50
+	elseif multiplier >= 50.5 then
+		multiplier = 100
+	end
+	util.yield(500)
+end)
+
+
+util.create_tick_handler(function()
     if not score_counter_enabled then return end
 
     local player_ped = PLAYER.PLAYER_PED_ID()
     if PED.IS_PED_IN_ANY_VEHICLE(player_ped, false) then
         local vehicle = PED.GET_VEHICLE_PED_IS_IN(player_ped, false)
-        
         local vehicle_pos = ENTITY.GET_ENTITY_COORDS(vehicle)
         local vehicle_heading = ENTITY.GET_ENTITY_HEADING(vehicle)
         
@@ -369,7 +403,16 @@ util.create_tick_handler(function()
         else
             text_offset_x = text_offset_x + 1.0
         end
-        
+
+		if VEHICLE.GET_VEHICLE_BODY_HEALTH(vehicle) < 1000 and crashdetection == true then 
+			--util.toast("dammaged!") debugging lol
+			setval = difficulty
+			difficulty = 1
+			util.yield(500)
+			difficulty = setval
+			menu.trigger_commands("fixvehicle")
+		end
+		
         local text_pos_x = vehicle_pos.x + text_offset_x * math.cos(math.rad(vehicle_heading)) - text_offset_y * math.sin(math.rad(vehicle_heading))
         local text_pos_y = vehicle_pos.y + text_offset_x * math.sin(math.rad(vehicle_heading)) + text_offset_y * math.cos(math.rad(vehicle_heading))
         local text_pos_z = vehicle_pos.z + offset_z
@@ -377,13 +420,14 @@ util.create_tick_handler(function()
         local success, screen_x, screen_y = world_to_screen(text_pos_x, text_pos_y, text_pos_z)
         
         if success and local_drift_score > 0 and VEHICLE.GET_PED_IN_VEHICLE_SEAT(vehicle, -1) == PLAYER.PLAYER_PED_ID() then
-            local score_text = "x" .. math.floor(local_drift_score)
+            local score_text = math.floor(local_drift_score) .. "pts."
             local rating_text, rating_color = get_rating_text(local_drift_score)
-            
             local shadow_offsets = {{0.001, 0}, {-0.001, 0}, {0, 0.001}, {0, -0.001}}
             for _, offset in ipairs(shadow_offsets) do
                 draw_text(screen_x + offset[1], screen_y + offset[2], score_text, 0.8, {r = 0, g = 0, b = 0, a = 1.0}, 4)
             end
+			local multiplier_text = multiplier .. "x"
+			draw_text(screen_x, screen_y - 0.05, multiplier_text, 0.8, {r = 1.0, g = 1.0, b = 1.0, a = 1.0}, 4)
             draw_text(screen_x, screen_y, score_text, 0.8, {r = 1.0, g = 1.0, b = 1.0, a = 1.0}, 4)
             draw_text(screen_x, screen_y + 0.05, rating_text, 0.6, rating_color, 4)
 			if local_drift_score > tonumber(last_high_score) then
@@ -426,7 +470,7 @@ util.create_tick_handler(function()
                         local success, screen_x, screen_y = world_to_screen(text_pos_x, text_pos_y, text_pos_z)
                         
                         if success and (drift_score2 or 0) > 0 and VEHICLE.GET_PED_IN_VEHICLE_SEAT(vehicle, -1) == PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(player) then
-                            local drift_score = drift_score2[player] or 0
+                            local drift_score = drift_score2 or 0
                             local score_text = "x" .. math.floor(drift_score)
                             local rating_text, rating_color = get_rating_text(drift_score)
 
@@ -440,7 +484,7 @@ util.create_tick_handler(function()
                             if show_distance then
                                 score_text = score_text .. " (" .. math.floor(distance) .. "m)"
                             end
-
+						
                             local shadow_offsets = {{0.001, 0}, {-0.001, 0}, {0, 0.001}, {0, -0.001}}
                             for _, offset in ipairs(shadow_offsets) do
                                 draw_text(screen_x + offset[1], screen_y + offset[2], score_text, scale, {r = 0, g = 0, b = 0, a = 1.0}, 4)
@@ -504,6 +548,9 @@ menu.my_root():list_select("Difficulty", {}, "Adjusts the grace period in millis
     util.toast("Value changed to " .. lang.get_localised(menu_name) .. " (" .. value .. ")")
 end)
 
+menu.toggle(menu.my_root(), "Crash Detection", {"crashdetection"}, "Toggle if you would like to end your score upon doing damage to your car.", function(value)
+    crashdetection = value
+end, false)
 
 menu.toggle(menu.my_root(), "Show Distance", {"showdistance"}, "Toggle displaying the distance next to the drift score for debugging.", function(value)
     show_distance = value
