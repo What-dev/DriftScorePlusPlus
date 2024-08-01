@@ -24,6 +24,7 @@ local updates_pending = false
 local difficulty = 1500 --1500 is the original
 local endbanner = true
 local multiplier = 1
+local font_size = 0.8
 
 local offset_x = 0
 local offset_y = 0
@@ -184,7 +185,7 @@ local function world_to_screen(x, y, z)
     return success, screen_x, screen_y
 end
 
-local function draw_large_message(title, message, duration)
+local function _large_message(title, message, duration)
     util.create_thread(function()
         local startPos = 0.2
         local endPos = 2
@@ -428,14 +429,14 @@ util.create_tick_handler(function()
             local rating_text, rating_color = get_rating_text(local_drift_score)
             local shadow_offsets = {{0.001, 0}, {-0.001, 0}, {0, 0.001}, {0, -0.001}}
             for _, offset in ipairs(shadow_offsets) do
-                draw_text(screen_x + offset[1], screen_y + offset[2], score_text, 0.8, {r = 0, g = 0, b = 0, a = 1.0}, 4)
+                draw_text(screen_x + offset[1], screen_y + offset[2], score_text, font_size, {r = 0, g = 0, b = 0, a = 1.0}, 4)
             end
 			local multiplier_text = multiplier .. "x"
-			draw_text(screen_x, screen_y - 0.05, multiplier_text, 0.8, {r = 1.0, g = 1.0, b = 1.0, a = 1.0}, 4)
-            draw_text(screen_x, screen_y, score_text, 0.8, {r = 1.0, g = 1.0, b = 1.0, a = 1.0}, 4)
-            draw_text(screen_x, screen_y + 0.05, rating_text, 0.6, rating_color, 4)
+			draw_text(screen_x, screen_y - 0.05, multiplier_text, font_size, {r = 1.0, g = 1.0, b = 1.0, a = 1.0}, 4)
+            draw_text(screen_x, screen_y, score_text, font_size, {r = 1.0, g = 1.0, b = 1.0, a = 1.0}, 4)
+            draw_text(screen_x, screen_y + 0.05, rating_text, font_size * 0.75, rating_color, 4)
 			if local_drift_score > tonumber(last_high_score) then
-				draw_text(screen_x, screen_y + 0.10, "New High Score!", 0.6, {r = 1.0, g = 1.0, b = 0, a = 1.0}, 4)
+				draw_text(screen_x, screen_y + 0.10, "New High Score!", font_size * 0.75, {r = 1.0, g = 1.0, b = 0, a = 1.0}, 4)
 			end
         end
     end
@@ -494,7 +495,7 @@ util.create_tick_handler(function()
                                 draw_text(screen_x + offset[1], screen_y + offset[2], score_text, scale, {r = 0, g = 0, b = 0, a = 1.0}, 4)
                             end
                             draw_text(screen_x, screen_y, score_text, scale, {r = 1.0, g = 1.0, b = 1.0, a = 1.0}, 4)
-                            draw_text(screen_x, screen_y + 0.05 * scale, rating_text, scale * 0.6, rating_color, 4)
+                            draw_text(screen_x, screen_y + 0.05 * scale, rating_text, scale * 0.75, rating_color, 4)
                         end
                     end
                 end
@@ -579,6 +580,25 @@ menu.action(menu.my_root(), "Reset Highest Drift Score", {"resethighscore"}, "Re
 	local_drift_score = 0
 	last_high_score = 0
 end)
+
+menu.divider(menu.my_root(), "Text Size and Offset")
+
+menu.slider(menu.my_root(), "Offset X", {"offset_x"}, "Adjust the X offset for the drift score text.", -10, 10, math.floor(offset_x), 1, function(value)
+    offset_x = value
+end)
+
+menu.slider(menu.my_root(), "Offset Y", {"offset_y"}, "Adjust the Y offset for the drift score text.", -10, 10, math.floor(offset_y), 1, function(value)
+    offset_y = value
+end)
+
+menu.slider(menu.my_root(), "Offset Z", {"offset_z"}, "Adjust the Z offset for the drift score text.", -10, 10, math.floor(offset_z), 1, function(value)
+    offset_z = value
+end)
+
+menu.slider_float(menu.my_root(), "Font Size", {"font_size"}, "Adjust the font size for the drift score text.", 5, 100, math.floor(font_size * 10), 5, function(value)
+    font_size = value / 10
+end)
+
 
 menu.divider(menu.my_root(), "Drift Mod")
 menu.divider(menu.my_root(), "Instructions")
