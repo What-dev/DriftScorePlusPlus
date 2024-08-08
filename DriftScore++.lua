@@ -25,6 +25,7 @@ local difficulty = 1500 --1500 is the original
 local endbanner = true
 local multiplier = 1
 local font_size = 0.8
+local multmax = 100
 
 local offset_x = 0
 local offset_y = 0
@@ -185,7 +186,7 @@ local function world_to_screen(x, y, z)
     return success, screen_x, screen_y
 end
 
-local function _large_message(title, message, duration)
+local function draw_large_message(title, message, duration)
     util.create_thread(function()
         local startPos = 0.2
         local endPos = 2
@@ -367,23 +368,23 @@ util.create_tick_handler(function()
 end)
 
 util.create_tick_handler(function()
-	if multiplier > 0 and multiplier < 1.5 then
+	if multiplier > 0 and multiplier < 1.5 and multmax == 1 then
 		multiplier = 1
-	elseif multiplier >= 1.5 and multiplier < 2.5 then
+	elseif multiplier >= 1.5 and multiplier < 2.5 and multmax == 2 then
 		multiplier = 2
-	elseif multiplier >= 2.5 and multiplier < 3.5 then
+	elseif multiplier >= 2.5 and multiplier < 3.5 and multmax == 3 then
 		multiplier = 3
-	elseif multiplier >= 3.5 and multiplier < 4.5 then
+	elseif multiplier >= 3.5 and multiplier < 4.5 and multmax == 4 then
 		multiplier = 4
-	elseif multiplier >= 4.5 and multiplier < 5.5 then
+	elseif multiplier >= 4.5 and multiplier < 5.5 and multmax == 5 then
 		multiplier = 5
-	elseif multiplier >= 5.5 and multiplier < 10.5 then
+	elseif multiplier >= 5.5 and multiplier < 10.5 and multmax == 10 then
 		multiplier = 10
-	elseif multiplier >= 10.5 and multiplier < 25.5 then
+	elseif multiplier >= 10.5 and multiplier < 25.5 and multmax == 25 then
 		multiplier = 25
-	elseif multiplier >= 25.5 and multiplier < 50.5 then
+	elseif multiplier >= 25.5 and multiplier < 50.5 and multmax == 50 then
 		multiplier = 50
-	elseif multiplier >= 50.5 then
+	elseif multiplier >= 50.5 and multmax == 100 then
 		multiplier = 100
 	end
 	util.yield(500)
@@ -550,6 +551,21 @@ menu.my_root():list_select("Difficulty", {}, "Adjusts the grace period in millis
 	{150, "Single line"},
 }, 1500, function(value, menu_name)
 	difficulty = value
+    util.toast("Value changed to " .. lang.get_localised(menu_name) .. " (" .. value .. ")")
+end)
+
+menu.my_root():list_select("Max Multiplier", {}, "Adjusts the maximum multiplier that will be used in the score calculation.", {
+    {1, "No Multiplier"},
+    {2, "2X"},
+    {3, "3X"},
+	{4, "4X"},
+    {5, "5X"},
+    {10, "10X"},
+    {25, "25X"},
+    {50, "50X"},
+    {100, "100X"},
+}, 100, function(value, menu_name)
+	multmax = value
     util.toast("Value changed to " .. lang.get_localised(menu_name) .. " (" .. value .. ")")
 end)
 
