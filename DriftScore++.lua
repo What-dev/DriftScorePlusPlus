@@ -186,7 +186,7 @@ local function world_to_screen(x, y, z)
     return success, screen_x, screen_y
 end
 
-local function _large_message(title, message, duration)
+local function draw_large_message(title, message, duration)
     util.create_thread(function()
         local startPos = 0.2
         local endPos = 2
