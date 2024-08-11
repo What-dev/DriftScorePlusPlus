@@ -25,6 +25,7 @@ local difficulty = 1500 --1500 is the original
 local endbanner = true
 local multiplier = 1
 local font_size = 0.8
+local multmax = 100
 
 local offset_x = 0
 local offset_y = 0
@@ -367,6 +368,10 @@ util.create_tick_handler(function()
 end)
 
 util.create_tick_handler(function()
+    if multiplier > multmax then
+        multiplier = multmax
+    end
+
 	if multiplier > 0 and multiplier < 1.5 then
 		multiplier = 1
 	elseif multiplier >= 1.5 and multiplier < 2.5 then
@@ -552,6 +557,22 @@ menu.my_root():list_select("Difficulty", {}, "Adjusts the grace period in millis
 	difficulty = value
     util.toast("Value changed to " .. lang.get_localised(menu_name) .. " (" .. value .. ")")
 end)
+
+menu.my_root():list_select("Max Multiplier", {}, "Adjusts the maximum multiplier that will be used in the score calculation.", {
+    {1, "No Multiplier"},
+    {2, "2X"},
+    {3, "3X"},
+	{4, "4X"},
+    {5, "5X"},
+    {10, "10X"},
+    {25, "25X"},
+    {50, "50X"},
+    {100, "100X"},
+}, 100, function(value, menu_name)
+	multmax = value
+    util.toast("Value changed to " .. lang.get_localised(menu_name) .. " (" .. value .. ")")
+end)
+
 
 menu.toggle(menu.my_root(), "Crash Detection", {"crashdetection"}, "Toggle if you would like to end your score upon doing damage to your car.", function(value)
     crashdetection = value
